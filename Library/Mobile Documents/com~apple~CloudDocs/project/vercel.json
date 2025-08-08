@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd legacy-app && npm run build",
+  "outputDirectory": "legacy-app/.next",
+  "installCommand": "cd legacy-app && npm install",
+  "framework": "nextjs",
+  "functions": {
+    "legacy-app/src/pages/api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
+}

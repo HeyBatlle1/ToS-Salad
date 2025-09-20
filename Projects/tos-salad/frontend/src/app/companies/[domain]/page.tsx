@@ -20,18 +20,23 @@ interface CompanyWithAnalysis extends Company {
   latestAnalysis: AnalysisResult | null
 }
 
-export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
+export default async function CompanyDetailPage({ params }: CompanyDetailPageProps) {
+  const resolvedParams = await params
+  return <CompanyDetailContent domain={resolvedParams.domain} />
+}
+
+function CompanyDetailContent({ domain }: { domain: string }) {
   const [company, setCompany] = useState<CompanyWithAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchCompanyData()
-  }, [params.domain])
+  }, [domain])
 
   const fetchCompanyData = async () => {
     try {
-      const response = await fetch(`/api/companies?domain=${encodeURIComponent(params.domain)}`)
+      const response = await fetch(`/api/companies?domain=${encodeURIComponent(domain)}`)
       const data = await response.json()
       
       if (response.ok) {

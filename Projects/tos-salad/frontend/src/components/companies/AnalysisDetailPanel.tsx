@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { MessageSquare, BookOpen, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MessageSquare, BookOpen, X, Bookmark, BookmarkCheck } from 'lucide-react'
 import { SlideOutPanel } from '@/components/ui/SlideOutPanel'
 import { RedFlagsList } from '@/components/companies/RedFlagsList'
 import { cn, formatDate } from '@/lib/utils'
+import { supabase } from '@/lib/supabase-client'
 import type { AnalysisResult } from '@/lib/supabase'
 
 interface AnalysisDetailPanelProps {
@@ -23,6 +24,72 @@ export function AnalysisDetailPanel({
   companyDomain
 }: AnalysisDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'analysis'>('overview')
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [isBookmarking, setIsBookmarking] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (user && analysis.id) {
+      const checkBookmark = async () => {
+        try {
+          const { data } = await supabase
+            .from('bookmarks')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('analysis_id', analysis.id)
+            .single()
+
+          setIsBookmarked(!!data)
+        } catch (error) {
+          setIsBookmarked(false)
+        }
+      }
+
+      checkBookmark()
+    }
+  }, [user, analysis.id])
+
+  const handleBookmark = async () => {
+    if (!user) return
+
+    setIsBookmarking(true)
+    try {
+      if (isBookmarked) {
+        await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('analysis_id', analysis.id)
+        setIsBookmarked(false)
+      } else {
+        await supabase
+          .from('bookmarks')
+          .insert({
+            user_id: user.id,
+            analysis_id: analysis.id,
+            company_name: companyName,
+            company_domain: companyDomain
+          })
+        setIsBookmarked(true)
+      }
+    } catch (error) {
+      console.error('Bookmark error:', error)
+    } finally {
+      setIsBookmarking(false)
+    }
+  }
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BookOpen },
@@ -39,17 +106,35 @@ export function AnalysisDetailPanel({
       {/* Company Header - Keep this minimal */}
       <div className="bg-gray-50 -m-6 mb-6 p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900">{companyName}</h3>
             <div className="text-sm text-gray-500">
               {companyDomain} • Analyzed {formatDate(analysis.analyzed_at)}
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-green-600">
-              {analysis.transparency_score}/100
+          <div className="flex items-center gap-4">
+            {user && (
+              <button
+                onClick={handleBookmark}
+                disabled={isBookmarking}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  isBookmarked
+                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                  isBookmarking && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+              </button>
+            )}
+            <div className="text-right">
+              <div className="text-2xl font-bold text-green-600">
+                {analysis.transparency_score}/100
+              </div>
+              <div className="text-xs text-gray-500">Transparency Score</div>
             </div>
-            <div className="text-xs text-gray-500">Transparency Score</div>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { MessageSquare, Shield, Users, Github } from 'lucide-react'
+import { Shield } from 'lucide-react'
+import { Navigation } from '@/components/layout/Navigation'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -32,45 +33,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="min-h-screen bg-gray-50 flex flex-col">
           {/* Navigation */}
-          <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between h-16">
-                <div className="flex items-center">
-                  <Link href="/" className="flex items-center space-x-2">
-                    <Shield className="h-8 w-8 text-green-600" />
-                    <span className="text-xl font-bold text-gray-900">ToS Salad</span>
-                  </Link>
-                </div>
-                
-                <div className="flex items-center space-x-6">
-                  <Link 
-                    href="/" 
-                    className="flex items-center space-x-1 text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    <MessageSquare size={16} />
-                    <span>Chat</span>
-                  </Link>
-                  
-                  <Link 
-                    href="/companies" 
-                    className="flex items-center space-x-1 text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    <Users size={16} />
-                    <span>Companies</span>
-                  </Link>
-                  
-                  <a
-                    href="https://github.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <Github size={20} />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </nav>
+          <Navigation />
 
           {/* Main Content */}
           <main className="flex-1">

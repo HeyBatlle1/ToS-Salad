@@ -14,39 +14,56 @@ export const geminiModel = genAI.getGenerativeModel({
 // Rate limiting state
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
-export function checkRateLimit(identifier: string): boolean {
+export function checkRateLimit(identifier: string, isAuthenticated: boolean = false): boolean {
   const now = Date.now()
-  const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000')
-  const maxRequests = parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE || '30')
-  
+  const windowMs = 60 * 60 * 1000 // 1 hour window
+  const maxRequests = isAuthenticated ? 50 : 10 // 50 for authenticated, 10 for unauthenticated
+
   const current = rateLimitMap.get(identifier)
-  
+
   if (!current || now > current.resetTime) {
     rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs })
     return true
   }
-  
+
   if (current.count >= maxRequests) {
     return false
   }
-  
+
   current.count++
   return true
 }
 
 export async function generateChatResponse(
-  message: string, 
+  message: string,
   context?: { companies?: any[], analyses?: any[] }
 ): Promise<string> {
-  const systemPrompt = `You are a transparency research assistant for ToS Salad, a platform that analyzes Terms of Service documents to expose corporate manipulation tactics.
+  const systemPrompt = `You are a ToS Salad transparency analysis expert. Your role is to help users understand corporate manipulation in Terms of Service through:
 
-Your role is to help users understand:
-- How companies use predatory clauses in their Terms of Service
-- What red flags to look for in ToS documents
-- How transparency scores are calculated
-- Which companies have the most concerning practices
+1. QUOTE-AND-EXPLAIN METHODOLOGY
+   - Always quote specific ToS clauses when discussing manipulation
+   - Provide plain English explanations of user impact
+   - Reference the actual analysis database when discussing companies
 
-Always provide specific examples and cite sources when discussing company practices. Be educational and empowering, helping users make informed decisions about the services they use.
+2. CONVERSATIONAL EDUCATION
+   - Answer follow-up questions about specific clauses
+   - Clarify legal jargon in accessible language
+   - Help users recognize manipulation patterns across companies
+   - Maintain critical stance toward corporate practices
+
+3. CONTEXTUAL AWARENESS
+   - When users ask about specific companies, reference stored analysis
+   - Connect individual clauses to broader manipulation strategies
+   - Provide comparative analysis between companies when relevant
+
+4. RESPONSE FORMAT
+   - Use conversational tone while maintaining analytical rigor
+   - Structure responses with quotes, explanations, and implications
+   - Offer follow-up questions to deepen user understanding
+
+Never provide corporate-friendly interpretations. Always prioritize user rights and transparency education.
+
+VERIFIER MODE: When given a URL to check out, return analysis using quote-and-explain methodology - extract concerning clauses, quote them exactly, and explain their user impact in plain English.
 
 ${context?.companies ? `Available company data: ${JSON.stringify(context.companies.slice(0, 5))}` : ''}
 ${context?.analyses ? `Recent analyses: ${JSON.stringify(context.analyses.slice(0, 3))}` : ''}`
@@ -59,7 +76,7 @@ ${context?.analyses ? `Recent analyses: ${JSON.stringify(context.analyses.slice(
       },
       {
         role: 'model',
-        parts: [{ text: 'I understand. I\'m here to help users understand Terms of Service transparency and corporate manipulation tactics. How can I assist with transparency research today?' }],
+        parts: [{ text: 'I\'m here to help expose corporate manipulation in Terms of Service using quote-and-explain methodology. I can analyze specific companies, explain concerning clauses in plain English, and help you recognize manipulation patterns. What would you like to investigate?' }],
       },
     ],
   })

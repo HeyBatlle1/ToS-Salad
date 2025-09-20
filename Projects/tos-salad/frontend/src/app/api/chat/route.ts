@@ -5,16 +5,17 @@ import { serverCompanyApi, serverAnalysisApi } from '@/lib/supabase-server'
 export async function POST(request: NextRequest) {
   try {
     const { message } = await request.json()
-    
+
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
-        { error: 'Message is required' }, 
+        { error: 'Message is required' },
         { status: 400 }
       )
     }
 
-    // Rate limiting by IP
+    // Rate limiting by IP (simplified for now)
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
@@ -34,8 +35,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Chat API error:', error)
+
+    // Always return JSON, never HTML error pages
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: `Chat error: ${error.message}` },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Failed to generate response' },
+      { error: 'Failed to generate response. Please try again.' },
       { status: 500 }
     )
   }

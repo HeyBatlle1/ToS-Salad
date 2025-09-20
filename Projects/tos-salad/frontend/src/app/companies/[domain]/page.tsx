@@ -145,6 +145,16 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Analysis */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Full Quote-and-Explain Analysis */}
+            {analysis.full_analysis && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Complete Analysis</h2>
+                <div className="prose prose-gray max-w-none">
+                  <pre className="whitespace-pre-wrap text-gray-700 leading-relaxed font-sans text-sm">{analysis.full_analysis}</pre>
+                </div>
+              </div>
+            )}
+
             {/* Executive Summary */}
             {analysis.executive_summary && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">

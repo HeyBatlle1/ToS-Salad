@@ -140,17 +140,7 @@ export const analysisApi = {
       .single()
     
     if (error && error.code !== 'PGRST116') throw error
-    
-    // Map CLI data structure to frontend expected format
-    if (data) {
-      data.red_flags = data.key_concerns?.map((concern: string, index: number) => ({
-        clause: concern,
-        severity: index < 3 ? 'high' : index < 7 ? 'medium' : 'low', // Map based on concern order
-        explanation: concern,
-        source_section: 'Terms of Service'
-      })) || []
-    }
-    
+
     return data
   },
 

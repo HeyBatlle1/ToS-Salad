@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { serverCompanyApi, serverAnalysisApi } from '@/lib/supabase-server'
 
-// Cache for company data
+// Cache for company data - CLEARED TO FORCE REFRESH
 let cachedData: { companies: any[], timestamp: number } | null = null
-const CACHE_TTL = parseInt(process.env.CACHE_TTL_SECONDS || '3600') * 1000
+const CACHE_TTL = parseInt(process.env.CACHE_TTL_SECONDS || '60') * 1000 // Reduced cache time
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,11 +27,13 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Check cache for all companies
+    // Check cache for all companies - CACHE DISABLED FOR REFRESH
     const now = Date.now()
-    if (cachedData && (now - cachedData.timestamp) < CACHE_TTL) {
-      return NextResponse.json({ companies: cachedData.companies })
-    }
+    // Force cache refresh by setting cachedData to null
+    cachedData = null
+    // if (cachedData && (now - cachedData.timestamp) < CACHE_TTL) {
+    //   return NextResponse.json({ companies: cachedData.companies })
+    // }
 
     // Fetch fresh data
     const companies = await serverCompanyApi.getAll()

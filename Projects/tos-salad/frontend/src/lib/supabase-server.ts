@@ -80,6 +80,7 @@ export interface AnalysisResult {
   recommendations?: string[]
   red_flags?: RedFlag[]
   summary?: string
+  full_analysis?: string
   created_at?: string
 }
 
@@ -133,24 +134,26 @@ export const serverAnalysisApi = {
   async getLatestForCompany(companyId: string): Promise<AnalysisResult | null> {
     const { data, error } = await supabaseServer
       .from('tos_analysis_results')
-      .select('*')
+      .select(`
+        *,
+        tos_analysis_documents!inner(
+          raw_content,
+          cleaned_content,
+          title
+        )
+      `)
       .eq('company_id', companyId)
       .order('analyzed_at', { ascending: false })
       .limit(1)
       .single()
-    
+
     if (error && error.code !== 'PGRST116') throw error
-    
-    // Map CLI data structure to frontend expected format
-    if (data) {
-      data.red_flags = data.key_concerns?.map((concern: string, index: number) => ({
-        clause: concern,
-        severity: index < 3 ? 'high' : index < 7 ? 'medium' : 'low', // Map based on concern order
-        explanation: concern,
-        source_section: 'Terms of Service'
-      })) || []
+
+    // Add the full quote-and-explain analysis from the document
+    if (data && data.tos_analysis_documents) {
+      data.full_analysis = data.tos_analysis_documents.raw_content || data.tos_analysis_documents.cleaned_content
     }
-    
+
     return data
   },
 

@@ -1,22 +1,42 @@
 import { NextResponse } from 'next/server'
-import { testConnection } from '@/lib/database'
 
 export async function GET() {
   try {
-    const dbHealthy = await testConnection()
+    // Check environment variables first without crashing
+    const envStatus = {
+      DATABASE_URL: process.env.DATABASE_URL ? 'Set' : 'Missing',
+      GOOGLE_GEMINI_API_KEY: process.env.GOOGLE_GEMINI_API_KEY ? 'Set' : 'Missing',
+      NODE_ENV: process.env.NODE_ENV || 'unknown',
+      NETLIFY: process.env.NETLIFY || 'false'
+    }
+
+    // Only try database connection if env vars are present
+    let dbStatus = 'not-tested'
+    if (envStatus.DATABASE_URL === 'Set') {
+      try {
+        // Dynamic import to avoid early validation crash
+        const { testConnection } = await import('@/lib/database')
+        const dbHealthy = await testConnection()
+        dbStatus = dbHealthy ? 'connected' : 'disconnected'
+      } catch (dbError) {
+        dbStatus = `error: ${dbError instanceof Error ? dbError.message : 'Unknown DB error'}`
+      }
+    } else {
+      dbStatus = 'env-missing'
+    }
 
     const health = {
-      status: dbHealthy ? 'healthy' : 'unhealthy',
+      status: dbStatus === 'connected' ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       services: {
-        database: dbHealthy ? 'connected' : 'disconnected',
+        database: dbStatus,
         api: 'running'
       },
-      environment: process.env.NODE_ENV || 'unknown'
+      environment: envStatus
     }
 
     return NextResponse.json(health, {
-      status: dbHealthy ? 200 : 503
+      status: dbStatus === 'connected' ? 200 : 503
     })
   } catch (error) {
     return NextResponse.json(
@@ -24,6 +44,7 @@ export async function GET() {
         status: 'error',
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
         services: {
           database: 'error',
           api: 'running'

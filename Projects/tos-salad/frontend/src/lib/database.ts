@@ -6,16 +6,30 @@ declare global {
   var __pg_pool: Pool | undefined
 }
 
-// Create a connection pool optimized for serverless/Netlify functions
+// Create a connection pool optimized for Neon + Netlify serverless
 function createPool(): Pool {
+  const connectionString = env.DATABASE_URL
+
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is required')
+  }
+
+  // Neon requires SSL in production and development
+  const sslConfig = {
+    rejectUnauthorized: false, // Neon uses self-signed certificates
+  }
+
   return new Pool({
-    connectionString: env.DATABASE_URL,
-    ssl: isProduction ? { rejectUnauthorized: false } : false,
-    max: 3, // Lower max connections for serverless
+    connectionString,
+    ssl: sslConfig, // Always use SSL for Neon
+    max: 1, // Very conservative for serverless - Neon handles pooling
     min: 0, // Allow pool to scale to zero
-    idleTimeoutMillis: 10000, // Shorter idle timeout for serverless
-    connectionTimeoutMillis: 5000, // Reasonable timeout
+    idleTimeoutMillis: 30000, // Longer idle timeout
+    connectionTimeoutMillis: 10000, // Longer connection timeout for Neon
     allowExitOnIdle: true, // Allow process to exit when idle
+    // Additional Neon-specific optimizations
+    query_timeout: 30000, // 30 second query timeout
+    statement_timeout: 30000, // 30 second statement timeout
   })
 }
 
@@ -108,26 +122,56 @@ export interface RedFlag {
   source_section?: string
 }
 
-// Database connection helper with improved error handling
-export async function query(text: string, params?: any[]) {
+// Database connection helper with Neon-optimized error handling
+export async function query(text: string, params?: any[], retries: number = 2): Promise<any> {
   // Validate environment variables at runtime
   validateRequiredEnv()
 
   console.log('Executing query:', text.substring(0, 100) + '...')
   let client: PoolClient | null = null
-  try {
-    client = await pool.connect()
-    const result = await client.query(text, params)
-    console.log(`Query returned ${result.rows.length} rows`)
-    return result
-  } catch (error) {
-    console.error('Database query error:', error)
-    console.error('Query was:', text)
-    console.error('Params were:', params)
-    throw error
-  } finally {
-    if (client) {
-      client.release()
+
+  for (let attempt = 1; attempt <= retries + 1; attempt++) {
+    try {
+      client = await pool.connect()
+      const result = await client.query(text, params)
+      console.log(`Query returned ${result.rows.length} rows (attempt ${attempt})`)
+      return result
+    } catch (error) {
+      console.error(`Database query error (attempt ${attempt}/${retries + 1}):`, error)
+
+      if (client) {
+        client.release()
+        client = null
+      }
+
+      // If this is the last attempt, throw the error
+      if (attempt === retries + 1) {
+        console.error('Final attempt failed. Query was:', text)
+        console.error('Params were:', params)
+        console.error('Database URL configured:', !!env.DATABASE_URL)
+
+        // Provide more specific error info for Neon issues
+        if (error instanceof Error) {
+          if (error.message.includes('ENOTFOUND') || error.message.includes('connect ETIMEDOUT')) {
+            throw new Error(`Database connection failed: ${error.message}. Check DATABASE_URL and network connectivity.`)
+          }
+          if (error.message.includes('password authentication failed')) {
+            throw new Error(`Database authentication failed: ${error.message}. Check DATABASE_URL credentials.`)
+          }
+          if (error.message.includes('database') && error.message.includes('does not exist')) {
+            throw new Error(`Database not found: ${error.message}. Check DATABASE_URL database name.`)
+          }
+        }
+
+        throw error
+      }
+
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+    } finally {
+      if (client) {
+        client.release()
+      }
     }
   }
 }

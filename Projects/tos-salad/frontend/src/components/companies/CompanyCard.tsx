@@ -6,7 +6,7 @@ import { AlertTriangle, ExternalLink, Calendar, Shield, Eye } from 'lucide-react
 import { cn, getTransparencyColor, getSeverityColor, formatDate } from '@/lib/utils'
 import { AnalysisDetailPanel } from '@/components/companies/AnalysisDetailPanel'
 import { CompanyFavicon } from '@/components/ui/CompanyFavicon'
-import type { Company, AnalysisResult } from '@/lib/supabase'
+import type { Company, AnalysisResult } from '@/lib/database'
 
 interface CompanyCardProps {
   company: Company & { latestAnalysis?: AnalysisResult | null }

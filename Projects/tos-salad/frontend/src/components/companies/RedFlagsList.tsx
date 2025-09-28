@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { AlertTriangle, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { cn, getSeverityColor } from '@/lib/utils'
-import type { RedFlag } from '@/lib/supabase'
+import type { RedFlag } from '@/lib/database'
 
 interface RedFlagsListProps {
   redFlags: RedFlag[]

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Filter, TrendingDown, AlertCircle } from 'lucide-react'
 import { CompanyCard } from '@/components/companies/CompanyCard'
-import type { Company, AnalysisResult } from '@/lib/supabase'
+import type { Company, AnalysisResult } from '@/lib/database'
 
 interface CompanyWithAnalysis extends Company {
   latestAnalysis?: AnalysisResult | null

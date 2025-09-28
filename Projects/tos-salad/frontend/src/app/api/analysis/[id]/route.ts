@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { serverAnalysisApi } from '@/lib/supabase-server'
+import { analysisApi } from '@/lib/database'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const analysisId = parseInt(params.id)
-    
-    if (isNaN(analysisId)) {
-      return NextResponse.json(
-        { error: 'Invalid analysis ID' },
-        { status: 400 }
-      )
-    }
+    const analysisId = params.id
 
-    const analysis = await serverAnalysisApi.getById(analysisId)
+    const analysis = await analysisApi.getById(analysisId)
 
     if (!analysis) {
       return NextResponse.json(

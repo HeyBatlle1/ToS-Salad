@@ -5,8 +5,7 @@ import { MessageSquare, BookOpen, X, Bookmark, BookmarkCheck } from 'lucide-reac
 import { SlideOutPanel } from '@/components/ui/SlideOutPanel'
 import { RedFlagsList } from '@/components/companies/RedFlagsList'
 import { cn, formatDate } from '@/lib/utils'
-import { supabase } from '@/lib/supabase-client'
-import type { AnalysisResult } from '@/lib/supabase'
+import type { AnalysisResult } from '@/lib/database'
 
 interface AnalysisDetailPanelProps {
   isOpen: boolean

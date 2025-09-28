@@ -8,7 +8,7 @@ import { TransparencyScore } from '@/components/companies/TransparencyScore'
 import { RedFlagsList } from '@/components/companies/RedFlagsList'
 import { SourceVerification } from '@/components/SourceVerification'
 import { cn, getTransparencyColor, formatDate } from '@/lib/utils'
-import type { Company, AnalysisResult } from '@/lib/supabase'
+import type { Company, AnalysisResult } from '@/lib/database'
 
 interface CompanyDetailPageProps {
   params: {

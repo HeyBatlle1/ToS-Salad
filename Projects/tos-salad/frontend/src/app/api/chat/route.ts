@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateChatResponse, checkRateLimit } from '@/lib/gemini'
-import { serverCompanyApi, serverAnalysisApi } from '@/lib/supabase-server'
+import { companyApi, analysisApi } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
 
     // Get context data for better responses
     const [companies, analyses] = await Promise.all([
-      serverCompanyApi.getAll().catch(() => []),
-      serverAnalysisApi.getAllResults().catch(() => [])
+      companyApi.getAll().catch(() => []),
+      analysisApi.getAllResults().catch(() => [])
     ])
 
     const response = await generateChatResponse(message, { companies, analyses })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { serverCompanyApi, serverAnalysisApi } from '@/lib/supabase-server'
+import { companyApi, analysisApi } from '@/lib/database'
 
 // Cache for company data - CLEARED TO FORCE REFRESH
 let cachedData: { companies: any[], timestamp: number } | null = null
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // If requesting specific company by domain
     if (domain) {
-      const company = await serverCompanyApi.getByDomain(domain)
+      const company = await companyApi.getByDomain(domain)
       if (!company) {
         return NextResponse.json(
           { error: 'Company not found' },
@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      const analysis = await serverAnalysisApi.getLatestForCompany(company.id)
-      return NextResponse.json({ 
-        company, 
-        analysis: analysis || null 
+      const analysis = await analysisApi.getLatestForCompany(company.id)
+      return NextResponse.json({
+        company,
+        analysis: analysis || null
       })
     }
 
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
     // }
 
     // Fetch fresh data
-    const companies = await serverCompanyApi.getAll()
-    
+    const companies = await companyApi.getAll()
+
     // Get latest analysis for each company
     const companiesWithAnalysis = await Promise.all(
       companies.map(async (company) => {
         try {
-          const analysis = await serverAnalysisApi.getLatestForCompany(company.id)
+          const analysis = await analysisApi.getLatestForCompany(company.id)
           return { ...company, latestAnalysis: analysis }
         } catch (error) {
           console.error(`Failed to get analysis for company ${company.id}:`, error)

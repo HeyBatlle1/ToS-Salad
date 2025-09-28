@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateChatResponse, checkRateLimit } from '@/lib/gemini'
-import { companyApi, analysisApi } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +10,20 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Check environment variables
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'AI service not configured. Please contact administrator.' },
+        { status: 503 }
+      )
+    }
+
+    // Dynamic imports to prevent build-time crashes
+    const [{ generateChatResponse, checkRateLimit }, { companyApi, analysisApi }] = await Promise.all([
+      import('@/lib/gemini'),
+      import('@/lib/database')
+    ])
 
     // Rate limiting by IP (simplified for now)
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'

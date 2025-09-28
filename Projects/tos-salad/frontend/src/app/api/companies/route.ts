@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { companyApi, analysisApi } from '@/lib/database'
 
 // Cache for company data - CLEARED TO FORCE REFRESH
 let cachedData: { companies: any[], timestamp: number } | null = null
@@ -15,6 +14,10 @@ export async function GET(request: NextRequest) {
     // If requesting specific company by domain
     if (domain) {
       console.log('Fetching company by domain:', domain)
+
+      // Dynamic import to prevent build-time crashes
+      const { companyApi, analysisApi } = await import('@/lib/database')
+
       const company = await companyApi.getByDomain(domain)
       if (!company) {
         console.log('Company not found for domain:', domain)
@@ -35,6 +38,9 @@ export async function GET(request: NextRequest) {
     const now = Date.now()
     // Force cache refresh by setting cachedData to null
     cachedData = null
+
+    // Dynamic import to prevent build-time crashes
+    const { companyApi, analysisApi } = await import('@/lib/database')
 
     console.log('Fetching all companies from database...')
     // Fetch fresh data

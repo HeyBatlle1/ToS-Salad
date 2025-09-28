@@ -113,13 +113,17 @@ export async function query(text: string, params?: any[]) {
   // Validate environment variables at runtime
   validateRequiredEnv()
 
+  console.log('Executing query:', text.substring(0, 100) + '...')
   let client: PoolClient | null = null
   try {
     client = await pool.connect()
     const result = await client.query(text, params)
+    console.log(`Query returned ${result.rows.length} rows`)
     return result
   } catch (error) {
     console.error('Database query error:', error)
+    console.error('Query was:', text)
+    console.error('Params were:', params)
     throw error
   } finally {
     if (client) {

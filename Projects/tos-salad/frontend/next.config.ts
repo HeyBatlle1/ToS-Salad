@@ -1,11 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Netlify serverless function deployment
-  output: 'standalone',
-
-  // Set output file tracing root to fix workspace detection
-  outputFileTracingRoot: process.cwd(),
+  // For Netlify, let the plugin handle deployment - no output mode needed
 
   // Configure external packages for server components
   serverExternalPackages: ['pg'],

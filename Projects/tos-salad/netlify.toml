@@ -7,7 +7,7 @@
 
 [build.environment]
   # Node.js version (required for Next.js 15.5.3)
-  NODE_VERSION = "18"
+  NODE_VERSION = "22"
 
   # Next.js specific environment variables
   NEXT_TELEMETRY_DISABLED = "1"

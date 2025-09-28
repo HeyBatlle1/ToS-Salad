@@ -268,4 +268,4 @@ See the LICENSE file for full details.
 
 ---
 
-**Remember**: You are not a product being sold. You are a person deserving transparent information about what you're agreeing to online.
+**Remember**: You are not a product being sold. You are a person deserving transparent information about what you're agreeing to online.# Debug build issue

@@ -13,7 +13,17 @@ interface OptionalEnvVars {
 
 type EnvVars = RequiredEnvVars & OptionalEnvVars
 
-function validateEnv(): EnvVars {
+// Get environment variables without validation (for build time)
+export const env = {
+  DATABASE_URL: process.env.DATABASE_URL || '',
+  GOOGLE_GEMINI_API_KEY: process.env.GOOGLE_GEMINI_API_KEY || '',
+  CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
+  NODE_ENV: process.env.NODE_ENV,
+  NETLIFY: process.env.NETLIFY,
+}
+
+// Validate environment variables at runtime
+export function validateRequiredEnv(): void {
   const requiredVars = ['DATABASE_URL', 'GOOGLE_GEMINI_API_KEY'] as const
   const missing: string[] = []
 
@@ -29,18 +39,7 @@ function validateEnv(): EnvVars {
       'Please check your .env file or Netlify environment settings.'
     )
   }
-
-  return {
-    DATABASE_URL: process.env.DATABASE_URL!,
-    GOOGLE_GEMINI_API_KEY: process.env.GOOGLE_GEMINI_API_KEY!,
-    CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
-    NODE_ENV: process.env.NODE_ENV,
-    NETLIFY: process.env.NETLIFY,
-  }
 }
-
-// Validate and export environment variables
-export const env = validateEnv()
 
 // Helper functions
 export const isProduction = env.NODE_ENV === 'production'

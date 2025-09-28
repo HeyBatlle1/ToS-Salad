@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { env } from './env'
+import { env, validateRequiredEnv } from './env'
 
-const genAI = new GoogleGenerativeAI(env.GOOGLE_GEMINI_API_KEY)
+// Initialize with placeholder, will validate at runtime
+const genAI = new GoogleGenerativeAI(env.GOOGLE_GEMINI_API_KEY || 'placeholder')
 
 export const geminiModel = genAI.getGenerativeModel({ 
   model: 'gemini-2.0-flash',
@@ -39,6 +40,8 @@ export async function generateChatResponse(
   message: string,
   context?: { companies?: any[], analyses?: any[] }
 ): Promise<string> {
+  // Validate environment variables at runtime
+  validateRequiredEnv()
   const systemPrompt = `You are a ToS Salad transparency analysis expert. Your role is to help users understand corporate manipulation in Terms of Service through:
 
 1. QUOTE-AND-EXPLAIN METHODOLOGY

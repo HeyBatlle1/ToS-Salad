@@ -1,5 +1,5 @@
 import { Pool, PoolClient } from 'pg'
-import { env, isProduction } from './env'
+import { env, isProduction, validateRequiredEnv } from './env'
 
 // Global connection pool for serverless reuse
 declare global {
@@ -110,6 +110,9 @@ export interface RedFlag {
 
 // Database connection helper with improved error handling
 export async function query(text: string, params?: any[]) {
+  // Validate environment variables at runtime
+  validateRequiredEnv()
+
   let client: PoolClient | null = null
   try {
     client = await pool.connect()

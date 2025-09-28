@@ -1,0 +1,29 @@
+{
+  "name": "tos-salad-netlify",
+  "version": "1.0.0",
+  "description": "ToS Salad - Netlify Deployment Wrapper",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "start": "cd frontend && npm start",
+    "lint": "cd frontend && npm run lint",
+    "typecheck": "cd frontend && npm run typecheck"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HeyBatlle1/ToS-Salad.git"
+  },
+  "keywords": [
+    "terms-of-service",
+    "transparency",
+    "privacy",
+    "netlify",
+    "nextjs"
+  ],
+  "author": "ToS Salad Team",
+  "license": "MIT"
+}

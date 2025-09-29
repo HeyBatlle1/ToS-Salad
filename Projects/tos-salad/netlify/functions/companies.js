@@ -22,7 +22,8 @@ function getPool() {
       min: 0, // Allow scaling to zero
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 15000,
-      application_name: 'tos-salad-netlify-companies'
+      application_name: 'tos-salad-netlify-companies',
+      options: '--options=--channel_binding=require'
     });
   }
   return pool;

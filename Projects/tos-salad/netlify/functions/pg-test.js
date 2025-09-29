@@ -32,9 +32,10 @@ exports.handler = async (event, context) => {
       ssl: {
         rejectUnauthorized: false
       },
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 15000,
       query_timeout: 30000,
       statement_timeout: 30000,
+      options: '--options=--channel_binding=require'
     });
 
     try {

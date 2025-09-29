@@ -19,8 +19,9 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Function settings for API routes
+# Function settings for API routes and serverless functions
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 # Headers for security and performance

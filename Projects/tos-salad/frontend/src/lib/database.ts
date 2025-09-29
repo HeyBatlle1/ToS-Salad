@@ -11,8 +11,16 @@ function createPool(): Pool {
   const connectionString = env.DATABASE_URL
 
   if (!connectionString) {
+    console.error('DATABASE_URL not found. Available env vars:', {
+      DATABASE_URL: !!process.env.DATABASE_URL,
+      NETLIFY_DATABASE_URL: !!process.env.NETLIFY_DATABASE_URL,
+      NODE_ENV: process.env.NODE_ENV,
+      NETLIFY: !!process.env.NETLIFY
+    })
     throw new Error('DATABASE_URL environment variable is required')
   }
+
+  console.log('Creating PostgreSQL pool for Netlify serverless with URL length:', connectionString.length)
 
   // Neon requires SSL in production and development
   const sslConfig = {
@@ -22,14 +30,15 @@ function createPool(): Pool {
   return new Pool({
     connectionString,
     ssl: sslConfig, // Always use SSL for Neon
-    max: 1, // Very conservative for serverless - Neon handles pooling
+    max: 1, // Single connection for serverless
     min: 0, // Allow pool to scale to zero
-    idleTimeoutMillis: 30000, // Longer idle timeout
-    connectionTimeoutMillis: 10000, // Longer connection timeout for Neon
+    idleTimeoutMillis: 30000, // 30 second idle timeout
+    connectionTimeoutMillis: 15000, // 15 second connection timeout
     allowExitOnIdle: true, // Allow process to exit when idle
     // Additional Neon-specific optimizations
     query_timeout: 30000, // 30 second query timeout
     statement_timeout: 30000, // 30 second statement timeout
+    application_name: 'tos-salad-netlify', // Help identify connections in Neon
   })
 }
 

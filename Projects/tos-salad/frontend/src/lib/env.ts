@@ -15,7 +15,8 @@ type EnvVars = RequiredEnvVars & OptionalEnvVars
 
 // Get environment variables without validation (for build time)
 export const env = {
-  DATABASE_URL: process.env.DATABASE_URL || '',
+  // Use Neon's Netlify integration variable names
+  DATABASE_URL: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || '',
   GOOGLE_GEMINI_API_KEY: process.env.GOOGLE_GEMINI_API_KEY || '',
   CACHE_TTL_SECONDS: process.env.CACHE_TTL_SECONDS,
   NODE_ENV: process.env.NODE_ENV,
@@ -24,13 +25,16 @@ export const env = {
 
 // Validate environment variables at runtime
 export function validateRequiredEnv(): void {
-  const requiredVars = ['DATABASE_URL', 'GOOGLE_GEMINI_API_KEY'] as const
   const missing: string[] = []
 
-  for (const varName of requiredVars) {
-    if (!process.env[varName]) {
-      missing.push(varName)
-    }
+  // Check for database URL (Neon provides NETLIFY_DATABASE_URL)
+  if (!process.env.NETLIFY_DATABASE_URL && !process.env.DATABASE_URL) {
+    missing.push('DATABASE_URL (or NETLIFY_DATABASE_URL)')
+  }
+
+  // Check for Gemini API key
+  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    missing.push('GOOGLE_GEMINI_API_KEY')
   }
 
   if (missing.length > 0) {
@@ -52,6 +56,7 @@ if (isDevelopment) {
   console.log('Environment variables loaded:', {
     NODE_ENV: env.NODE_ENV,
     DATABASE_URL: env.DATABASE_URL ? '✓ Set' : '✗ Missing',
+    NETLIFY_DATABASE_URL: process.env.NETLIFY_DATABASE_URL ? '✓ Set' : '✗ Missing',
     GOOGLE_GEMINI_API_KEY: env.GOOGLE_GEMINI_API_KEY ? '✓ Set' : '✗ Missing',
     NETLIFY: isNetlify ? '✓ Netlify detected' : '✗ Not Netlify',
   })

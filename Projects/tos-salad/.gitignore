@@ -137,5 +137,5 @@ full-*.js
 priority-*.md
 legal-*.json
 bin/
-src/
+/src/
 migration-tools/

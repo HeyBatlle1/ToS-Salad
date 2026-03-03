@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Shield, MessageSquare, Users, Github, Info } from 'lucide-react'
+import { Shield, MessageSquare, Users, Github, Info, Search } from 'lucide-react'
 import { LoginModal } from '@/components/auth/LoginModal'
 
 export function Navigation() {
@@ -24,20 +24,27 @@ export function Navigation() {
               </Link>
 
               {/* Primary Navigation */}
-              <div className="hidden md:flex space-x-6">
+              <div className="hidden md:flex space-x-1">
                 <Link
                   href="/companies"
-                  className="text-gray-700 hover:text-green-600 px-3 py-2 text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-green-600 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-green-50"
                 >
                   <Users className="inline-block w-4 h-4 mr-2" />
                   Companies
                 </Link>
                 <Link
+                  href="/analyze"
+                  className="text-gray-700 hover:text-green-600 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-green-50"
+                >
+                  <Search className="inline-block w-4 h-4 mr-2" />
+                  Analyze
+                </Link>
+                <Link
                   href="/chat"
-                  className="text-gray-700 hover:text-green-600 px-3 py-2 text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-green-600 px-3 py-2 text-sm font-medium transition-colors rounded-lg hover:bg-green-50"
                 >
                   <MessageSquare className="inline-block w-4 h-4 mr-2" />
-                  AI Agent
+                  AI Assistant
                 </Link>
               </div>
             </div>
@@ -78,11 +85,18 @@ export function Navigation() {
               Companies
             </Link>
             <Link
+              href="/analyze"
+              className="flex flex-col items-center text-gray-700 hover:text-green-600 px-3 py-2 text-xs"
+            >
+              <Search className="h-5 w-5 mb-1" />
+              Analyze
+            </Link>
+            <Link
               href="/chat"
               className="flex flex-col items-center text-gray-700 hover:text-green-600 px-3 py-2 text-xs"
             >
               <MessageSquare className="h-5 w-5 mb-1" />
-              AI Agent
+              Assistant
             </Link>
           </div>
         </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Shield, MessageSquare, AlertTriangle, Users, ArrowRight } from 'lucide-react'
+import { Shield, MessageSquare, AlertTriangle, Users, ArrowRight, Search } from 'lucide-react'
 
 export function HeroSection() {
   const scrollToChat = () => {
@@ -45,41 +45,49 @@ export function HeroSection() {
             <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
               <Users size={16} className="text-purple-600" />
             </div>
-            <span className="text-gray-700">12+ companies analyzed</span>
+            <span className="text-gray-700">10+ companies analyzed — and growing</span>
           </div>
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-          <Link 
-            href="/companies"
-            className="flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+        <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+          <Link
+            href="/analyze"
+            className="flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
           >
-            View Company Reports
+            <Search size={16} />
+            Analyze a Company
+          </Link>
+
+          <Link
+            href="/companies"
+            className="flex items-center justify-center gap-2 border-2 border-green-200 text-green-700 px-6 py-3 rounded-lg hover:bg-green-50 transition-colors font-medium"
+          >
+            View Reports
             <ArrowRight size={16} />
           </Link>
-          
-          <button 
+
+          <button
             onClick={scrollToChat}
-            className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            className="flex items-center justify-center gap-2 border border-gray-300 text-gray-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
           >
             <MessageSquare size={16} />
-            Start Chatting
+            Ask AI
           </button>
         </div>
 
         {/* Trust Indicators */}
         <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600 mb-2 font-medium">Recently flagged:</p>
+          <p className="text-sm text-gray-600 mb-2 font-medium">Recent findings:</p>
           <div className="flex flex-wrap gap-2">
             <span className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full">
-              Replit: 19 red flags
+              TikTok: Score 1/9
             </span>
             <span className="px-3 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
-              Data harvesting clauses
+              Forced arbitration clauses
             </span>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-              Unfair termination terms
+            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+              Signal: Score 9/9 ✓
             </span>
           </div>
         </div>

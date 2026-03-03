@@ -1,38 +1,77 @@
 import type { NextConfig } from "next";
 
+const securityHeaders = [
+  {
+    key: 'X-DNS-Prefetch-Control',
+    value: 'on',
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'DENY',
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+  {
+    key: 'X-XSS-Protection',
+    value: '1; mode=block',
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin',
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+  },
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  {
+    // CSP: allow our own assets + Google Fonts + favicons from external domains
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",   // Next.js needs these
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https: blob:",                 // favicons from any https domain
+      "connect-src 'self' https://generativelanguage.googleapis.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '),
+  },
+]
+
 const nextConfig: NextConfig = {
-  // For Netlify, let the plugin handle deployment - no output mode needed
-
-  // Configure external packages for server components
   serverExternalPackages: ['pg'],
-
-  // Optimize for production
   compress: true,
-  poweredByHeader: false,
+  poweredByHeader: false,   // Don't advertise Next.js version
   reactStrictMode: true,
 
-  // Image optimization for Netlify
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ]
+  },
+
   images: {
     formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 31536000, // 1 year
-    unoptimized: false, // Keep optimization for better performance
+    minimumCacheTTL: 31536000,
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' }, // favicons come from company domains
+    ],
   },
 
-  // Configure for Netlify Functions
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    GOOGLE_GEMINI_API_KEY: process.env.GOOGLE_GEMINI_API_KEY,
-  },
-
-  // Skip ESLint during build for now
   eslint: {
     ignoreDuringBuilds: true,
   },
-
-  // Skip TypeScript type checking during build for now
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-};
+}
 
 export default nextConfig;

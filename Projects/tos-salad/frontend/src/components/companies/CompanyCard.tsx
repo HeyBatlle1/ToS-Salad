@@ -34,7 +34,7 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
             {/* Company Favicon - Top Left */}
             <div className="flex-shrink-0">
               <CompanyFavicon
-                domain={company.domain}
+                domain={company.domain ?? ''}
                 companyName={company.name}
                 size={72}
                 className="ring-2 ring-gray-100 shadow-lg"
@@ -207,7 +207,7 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
           onClose={() => setShowAnalysisPanel(false)}
           analysis={analysis}
           companyName={company.name}
-          companyDomain={company.domain}
+          companyDomain={company.domain ?? ''}
         />
       )}
     </div>

@@ -11,9 +11,7 @@ import { cn, getTransparencyColor, formatDate } from '@/lib/utils'
 import type { Company, AnalysisResult } from '@/lib/database'
 
 interface CompanyDetailPageProps {
-  params: {
-    domain: string
-  }
+  params: Promise<{ domain: string }>
 }
 
 interface CompanyWithAnalysis extends Company {
@@ -151,11 +149,11 @@ function CompanyDetailContent({ domain }: { domain: string }) {
           {/* Main Analysis */}
           <div className="lg:col-span-2 space-y-6">
             {/* Full Quote-and-Explain Analysis */}
-            {analysis.full_analysis && (
+            {analysis.educational_content && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Complete Analysis</h2>
                 <div className="prose prose-gray max-w-none">
-                  <pre className="whitespace-pre-wrap text-gray-700 leading-relaxed font-sans text-sm">{analysis.full_analysis}</pre>
+                  <pre className="whitespace-pre-wrap text-gray-700 leading-relaxed font-sans text-sm">{analysis.educational_content}</pre>
                 </div>
               </div>
             )}
@@ -239,10 +237,15 @@ function CompanyDetailContent({ domain }: { domain: string }) {
                   <span className="font-bold text-red-700">{highSeverityFlags.length}</span>
                 </div>
                 
-                {analysis.privacy_score !== undefined && (
+                {analysis.risk_level && (
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Privacy Score</span>
-                    <span className="font-bold text-blue-600">{analysis.privacy_score}/100</span>
+                    <span className="text-gray-600">Risk Level</span>
+                    <span className={`font-bold ${
+                      analysis.risk_level === 'Critical' ? 'text-red-700' :
+                      analysis.risk_level === 'High' ? 'text-red-600' :
+                      analysis.risk_level === 'Medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>{analysis.risk_level}</span>
                   </div>
                 )}
               </div>
@@ -264,10 +267,10 @@ function CompanyDetailContent({ domain }: { domain: string }) {
                   </div>
                 )}
                 
-                {company.headquarters && (
+                {company.platform_type && (
                   <div>
-                    <span className="text-gray-600">Headquarters:</span>
-                    <span className="ml-2 font-medium">{company.headquarters}</span>
+                    <span className="text-gray-600">Platform:</span>
+                    <span className="ml-2 font-medium">{company.platform_type}</span>
                   </div>
                 )}
                 
@@ -291,10 +294,9 @@ function CompanyDetailContent({ domain }: { domain: string }) {
             </div>
 
             {/* Source Verification */}
-            <SourceVerification 
-              domain={company.domain}
-              lastAnalyzed={analysis.analyzed_at}
-            />
+            {company.document_url && (
+              <SourceVerification url={company.document_url} />
+            )}
           </div>
         </div>
       ) : (

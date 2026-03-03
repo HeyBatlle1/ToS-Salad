@@ -42,7 +42,7 @@ export default function CompaniesPage() {
     .filter(company => {
       const matchesSearch = 
         company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (company.domain ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         company.industry?.toLowerCase().includes(searchTerm.toLowerCase())
       
       if (!matchesSearch) return false

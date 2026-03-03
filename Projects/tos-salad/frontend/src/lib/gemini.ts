@@ -1,93 +1,91 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { env, validateRequiredEnv } from './env'
+import { GoogleGenAI } from '@google/genai'
 
-// Initialize with placeholder, will validate at runtime
-const genAI = new GoogleGenerativeAI(env.GOOGLE_GEMINI_API_KEY || 'placeholder')
+const MODEL = 'gemini-3.0-flash'
 
-export const geminiModel = genAI.getGenerativeModel({ 
-  model: 'gemini-2.0-flash',
-  generationConfig: {
-    temperature: 0.1,
-    topP: 0.95,
-    maxOutputTokens: 8192,
-  }
-})
+function getClient() {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY is not set')
+  return new GoogleGenAI({ apiKey })
+}
 
-// Rate limiting state
+// ─── Rate Limiting ─────────────────────────────────────────────────────────
+
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
-export function checkRateLimit(identifier: string, isAuthenticated: boolean = false): boolean {
+export function checkRateLimit(identifier: string, isAuthenticated = false): boolean {
   const now = Date.now()
-  const windowMs = 60 * 60 * 1000 // 1 hour window
-  const maxRequests = isAuthenticated ? 50 : 10 // 50 for authenticated, 10 for unauthenticated
+  const windowMs = 60 * 60 * 1000
+  const maxRequests = isAuthenticated ? 50 : 10
 
   const current = rateLimitMap.get(identifier)
-
   if (!current || now > current.resetTime) {
     rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs })
     return true
   }
-
-  if (current.count >= maxRequests) {
-    return false
-  }
-
+  if (current.count >= maxRequests) return false
   current.count++
   return true
 }
 
+// ─── Chat Response ──────────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are a ToS Salad transparency analysis expert. Your role is to help everyday people — not just lawyers or tech experts — understand what they're actually agreeing to when they accept Terms of Service.
+
+CORE METHODOLOGY — Quote and Explain:
+- When discussing a concerning clause, quote the exact text first
+- Then explain in plain English what it means for a normal person
+- Use language anyone can understand, no jargon
+
+YOUR STANCE:
+- Always prioritize the user's perspective and rights
+- Be direct about when a company's terms are predatory or manipulative
+- Use Signal as the positive example — it proves user-friendly terms are a choice, not a necessity
+
+RESPONSE STYLE:
+- Conversational but informative
+- Short paragraphs, not walls of text
+- Use the company data provided to give specific, accurate answers
+- When users ask about a company, lead with the most important findings`
+
 export async function generateChatResponse(
   message: string,
-  context?: { companies?: any[], analyses?: any[] }
+  context?: { companies?: any[] }
 ): Promise<string> {
-  // Validate environment variables at runtime
-  validateRequiredEnv()
-  const systemPrompt = `You are a ToS Salad transparency analysis expert. Your role is to help users understand corporate manipulation in Terms of Service through:
+  const ai = getClient()
 
-1. QUOTE-AND-EXPLAIN METHODOLOGY
-   - Always quote specific ToS clauses when discussing manipulation
-   - Provide plain English explanations of user impact
-   - Reference the actual analysis database when discussing companies
+  const contextBlock = context?.companies?.length
+    ? `\n\nOur database contains analysis of these companies:\n${JSON.stringify(context.companies, null, 2)}`
+    : ''
 
-2. CONVERSATIONAL EDUCATION
-   - Answer follow-up questions about specific clauses
-   - Clarify legal jargon in accessible language
-   - Help users recognize manipulation patterns across companies
-   - Maintain critical stance toward corporate practices
+  const contents = [
+    {
+      role: 'user' as const,
+      parts: [{ text: SYSTEM_PROMPT + contextBlock }],
+    },
+    {
+      role: 'model' as const,
+      parts: [{ text: "I'm here to help you understand what you're really agreeing to. Ask me about any company's Terms of Service, or I can walk you through the biggest red flags we've found. What would you like to know?" }],
+    },
+    {
+      role: 'user' as const,
+      parts: [{ text: message }],
+    },
+  ]
 
-3. CONTEXTUAL AWARENESS
-   - When users ask about specific companies, reference stored analysis
-   - Connect individual clauses to broader manipulation strategies
-   - Provide comparative analysis between companies when relevant
-
-4. RESPONSE FORMAT
-   - Use conversational tone while maintaining analytical rigor
-   - Structure responses with quotes, explanations, and implications
-   - Offer follow-up questions to deepen user understanding
-
-Never provide corporate-friendly interpretations. Always prioritize user rights and transparency education.
-
-VERIFIER MODE: When given a URL to check out, return analysis using quote-and-explain methodology - extract concerning clauses, quote them exactly, and explain their user impact in plain English.
-
-${context?.companies ? `Available company data: ${JSON.stringify(context.companies.slice(0, 5))}` : ''}
-${context?.analyses ? `Recent analyses: ${JSON.stringify(context.analyses.slice(0, 3))}` : ''}`
-
-  const chat = geminiModel.startChat({
-    history: [
-      {
-        role: 'user',
-        parts: [{ text: systemPrompt }],
-      },
-      {
-        role: 'model',
-        parts: [{ text: 'I\'m here to help expose corporate manipulation in Terms of Service using quote-and-explain methodology. I can analyze specific companies, explain concerning clauses in plain English, and help you recognize manipulation patterns. What would you like to investigate?' }],
-      },
-    ],
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents,
+    config: {
+      temperature: 0.2,
+      topP: 0.95,
+      maxOutputTokens: 4096,
+    },
   })
 
-  const result = await chat.sendMessage(message)
-  return result.response.text()
+  return response.text ?? ''
 }
+
+// ─── ToS Document Analysis ──────────────────────────────────────────────────
 
 export async function analyzeToSDocument(
   content: string,
@@ -102,49 +100,46 @@ export async function analyzeToSDocument(
   }>
   summary: string
 }> {
-  const prompt = `Analyze the following Terms of Service document for ${companyName}. 
+  const ai = getClient()
 
-Focus on identifying:
-1. Predatory clauses that favor the company over consumers
-2. Manipulation tactics and dark patterns
-3. Unclear or deceptive language
-4. Consumer rights violations
-5. Privacy and data usage concerns
+  const prompt = `Analyze the following Terms of Service document for ${companyName}.
 
-Rate transparency from 0-100 (0 = completely opaque, 100 = fully transparent).
+Identify predatory clauses, manipulation tactics, and consumer rights concerns.
+Rate transparency from 1-9 (1 = extremely predatory, 9 = fully transparent and user-friendly).
 
-Document content:
-${content.substring(0, 50000)} // Truncate for API limits
+Document:
+${content.substring(0, 50000)}
 
-Respond in JSON format:
+Respond ONLY with valid JSON in this exact format:
 {
-  "transparencyScore": number,
+  "transparencyScore": <number 1-9>,
   "redFlags": [
     {
-      "clause": "exact text from document",
-      "severity": "low|medium|high", 
-      "explanation": "why this is problematic",
-      "sourceSection": "section name if available"
+      "clause": "<exact quote from document>",
+      "severity": "low|medium|high",
+      "explanation": "<plain English explanation of what this means for users>",
+      "sourceSection": "<section name if available>"
     }
   ],
-  "summary": "overall assessment of document transparency"
+  "summary": "<2-3 sentence plain English assessment>"
 }`
 
-  const result = await geminiModel.generateContent(prompt)
-  const responseText = result.response.text()
-  
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: { temperature: 0.1, maxOutputTokens: 8192 },
+  })
+
+  const text = response.text ?? ''
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+
   try {
-    return JSON.parse(responseText)
-  } catch (error) {
-    // Fallback parsing if JSON is malformed
+    return JSON.parse(jsonMatch?.[0] ?? text)
+  } catch {
     return {
       transparencyScore: 0,
-      redFlags: [{
-        clause: "Analysis failed",
-        severity: 'high' as const,
-        explanation: "Could not parse analysis results",
-      }],
-      summary: responseText.substring(0, 500)
+      redFlags: [{ clause: 'Analysis failed', severity: 'high', explanation: 'Could not parse results' }],
+      summary: text.substring(0, 500),
     }
   }
 }

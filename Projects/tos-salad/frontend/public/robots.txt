@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# We are a public educational service.
+# Please do not hammer our API endpoints.
+# Sitemap: https://tossalad.com/sitemap.xml

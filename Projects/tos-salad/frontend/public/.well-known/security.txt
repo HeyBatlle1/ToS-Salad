@@ -1,0 +1,7 @@
+Contact: mailto:security@tossalad.com
+Preferred-Languages: en
+Policy: https://tossalad.com/security
+Canonical: https://tossalad.com/.well-known/security.txt
+
+# ToS Salad is a non-profit educational project.
+# We welcome responsible disclosure of security vulnerabilities.

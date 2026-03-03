@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getClientIP, checkRateLimit, securityHeaders } from '@/lib/security'
-import { analyzeToSDocument } from '@/lib/gemini'
 import { Pool } from 'pg'
 
-const ANALYZE_MAX_REQ  = 5              // per hour — Gemini calls are expensive
-const FETCH_TIMEOUT_MS = 15_000
-const MAX_CONTENT_BYTES = 500_000       // 500 KB — then we truncate
+const ANALYZE_MAX_REQ   = 5
+const FETCH_TIMEOUT_MS  = 12_000       // leave room for Gemini within 26s total
+const MAX_CONTENT_CHARS = 30_000       // ~20k tokens — enough for full ToS analysis
+const GEMINI_MODEL      = 'gemini-2.5-flash'
 
 // Private IP ranges — block SSRF
 const PRIVATE_IP_RE = /^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|::1$|localhost)/i
@@ -110,8 +110,9 @@ export async function POST(request: NextRequest) {
 
       const contentType = res.headers.get('content-type') ?? ''
       const raw = await res.text()
-      const truncated = raw.slice(0, MAX_CONTENT_BYTES)
+      const truncated = raw.slice(0, MAX_CONTENT_CHARS * 4)   // rough byte estimate before strip
       tosContent = contentType.includes('html') ? htmlToText(truncated) : truncated
+      tosContent = tosContent.slice(0, MAX_CONTENT_CHARS)
     } catch (err: any) {
       if (err?.name === 'AbortError') {
         return NextResponse.json({ error: 'Request timed out fetching that URL' }, { status: 504, headers })
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
 
   } else if (body.tos_text) {
     // ── Use pasted text ───────────────────────────────────────────────────────
-    tosContent = body.tos_text.slice(0, MAX_CONTENT_BYTES)
+    tosContent = body.tos_text.slice(0, MAX_CONTENT_CHARS)
   } else {
     return NextResponse.json({ error: 'Provide either a ToS URL or paste the ToS text' }, { status: 400, headers })
   }
@@ -130,13 +131,54 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Content too short to analyze. Paste more of the Terms of Service.' }, { status: 400, headers })
   }
 
-  // ── Run Gemini analysis ──────────────────────────────────────────────────────
-  let analysis: Awaited<ReturnType<typeof analyzeToSDocument>>
+  // ── Run Gemini analysis via REST API ─────────────────────────────────────────
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) return NextResponse.json({ error: 'Service unavailable' }, { status: 503, headers })
+
+  const prompt = `Analyze the following Terms of Service document for ${companyName}.
+
+Identify predatory clauses, manipulation tactics, and consumer rights concerns.
+Rate transparency from 1-9 (1 = extremely predatory, 9 = fully transparent and user-friendly).
+
+Document:
+${tosContent}
+
+Respond ONLY with valid JSON (no markdown fences) in this exact format:
+{
+  "transparencyScore": <number 1-9>,
+  "redFlags": [
+    {
+      "clause": "<exact quote from document>",
+      "severity": "low|medium|high",
+      "explanation": "<plain English explanation>",
+      "sourceSection": "<section name if available>"
+    }
+  ],
+  "summary": "<2-3 sentence plain English assessment>"
+}`
+
+  let analysis: { transparencyScore: number; redFlags: Array<{ clause: string; severity: 'low'|'medium'|'high'; explanation: string; sourceSection?: string }>; summary: string }
   try {
-    analysis = await analyzeToSDocument(tosContent, companyName)
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+        }),
+      }
+    )
+    const geminiData = await geminiRes.json()
+    if (geminiData.error) throw new Error(geminiData.error.message)
+    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/,'')
+    const match = stripped.match(/\{[\s\S]*\}/)
+    analysis = JSON.parse(match?.[0] ?? stripped)
   } catch (err) {
     console.error('[analyze] Gemini error:', err)
-    return NextResponse.json({ error: 'Analysis failed. Please try again.' }, { status: 500, headers })
+    return NextResponse.json({ error: 'Analysis failed. Please try again in a moment.' }, { status: 500, headers })
   }
 
   const riskLevel = scoreToRisk(analysis.transparencyScore)

@@ -23,6 +23,8 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  # Extend timeout for AI analysis functions (default 10s, max 26s on paid)
+  timeout = 26
 
 # Headers for security and performance
 [[headers]]
